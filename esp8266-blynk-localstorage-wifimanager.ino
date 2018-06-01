@@ -30,9 +30,19 @@
 #define COLOR_ORDER GRB
 #define NUM_LEDS    16
 #define BRIGHTNESS  255
-#define buttonPin 2
+// Animation Buttons
+#define buttonPinA 2
+#define buttonPinB 0
+#define buttonPinC 3
 #define SECONDS_PER_PALETTE 10
-int buttonState;
+int buttonStateA;
+int buttonStateB;
+int buttonStateC;
+bool runColor; // This is for the color selection
+// Blynk colors
+int redColor;
+int blueColor;
+int greenColor;
 
 CRGB leds[NUM_LEDS];
 
@@ -53,6 +63,64 @@ bool shouldSaveConfig = true;
 void saveConfigCallback () {
   Serial.println("Should save config");
   shouldSaveConfig = true;
+}
+
+// Sync buttons with the Blynk app on reconnect, that way I don't have to deal
+// With storing the states in flash
+BLYNK_CONNECTED() {
+    Blynk.syncAll();
+}
+
+// Blynk virtual pin handling
+// Stock animation
+BLYNK_WRITE(V0) //Button Widget is writing to pin V1
+{
+  Blynk.virtualWrite(V1, 0);
+  Blynk.virtualWrite(V2, 0);
+  Blynk.virtualWrite(V3, 0);
+  buttonStateA = 0;
+  buttonStateB = 0;
+  buttonStateC = 0;
+  redColor = param[0].asInt();
+  greenColor = param[1].asInt();
+  blueColor = param[2].asInt();
+  Serial.println(redColor);
+  Serial.println(greenColor);
+  Serial.println(blueColor);
+}
+BLYNK_WRITE(V1) //Button Widget is writing to pin V1
+{
+  buttonStateA = param.asInt();
+  Serial.println(buttonStateA);
+  // Update the buttons on the app
+  if (buttonStateB == 1){
+    Blynk.virtualWrite(V2, 0);
+  }
+  if (buttonStateC == 1){
+    Blynk.virtualWrite(V3, 0);
+  }
+}
+// Custom 1
+BLYNK_WRITE(V2)
+{
+  buttonStateB = param.asInt();
+  if (buttonStateA == 1){
+    Blynk.virtualWrite(V1, 0);
+  }
+  if (buttonStateC == 1){
+    Blynk.virtualWrite(V3, 0);
+  }
+}
+// Custom 2
+BLYNK_WRITE(V3)
+{
+  buttonStateC = param.asInt();
+  if (buttonStateA == 1){
+    Blynk.virtualWrite(V1, 0);
+  }
+  if (buttonStateB == 1){
+    Blynk.virtualWrite(V2, 0);
+  }
 }
 
 
@@ -211,8 +279,12 @@ void setup() {
   .setDither(BRIGHTNESS < 255);
   FastLED.setBrightness(BRIGHTNESS);
   
-  pinMode(buttonPin, INPUT);
-  buttonState = digitalRead(buttonPin);
+  pinMode(buttonPinA, INPUT);
+  buttonStateA = digitalRead(buttonPinA);
+  pinMode(buttonPinB, INPUT);
+  buttonStateB = digitalRead(buttonPinB);
+  pinMode(buttonPinC, INPUT);
+  buttonStateC = digitalRead(buttonPinC);
 
 
   Blynk.config(apikey);
@@ -300,10 +372,46 @@ void loop() {
   //ESP.restart();
 ///////////////////////////////////////////////////////////////////////
 
+// Handle the buttons to switch between modes and color changes
+//buttonStateA = digitalRead(buttonPinA);
+//buttonStateB = digitalRead(buttonPinB);
+//buttonStateC = digitalRead(buttonPinC);
 
-buttonState = digitalRead(buttonPin);
+// Check for changes, update variables so we can make the buttons push buttons and not switches on Blynk app
+// Using virtual pins now so don't have to worry about loop speed checking for pin since Blynk checking virtual reads will
+// Run in the background
+if(buttonStateA == 1){
+  buttonStateB = 0;
+  buttonStateC = 0;
+  runColor = false;
+}
 
-  if(digitalRead(buttonPin) == 1){
+// Old hardware button checking
+//if (digitalRead(buttonPinA) == 1){
+//  buttonStateA = 1;
+//  buttonStateB = 0;
+//  buttonStateC = 0;
+//  runColor = false;
+//}
+//if (digitalRead(buttonPinB) == 1){
+//  buttonStateA = 0;
+//  buttonStateB = 1;
+//  buttonStateC = 0;
+//  runColor = false;
+//}
+//if (digitalRead(buttonPinC) == 1){
+//  buttonStateA = 0;
+//  buttonStateB = 0;
+//  buttonStateC = 1;
+//  runColor = false;
+//}
+//if (runColor){
+//  buttonStateA = 0;
+//  buttonStateB = 0;
+//  buttonStateC = 0;
+//}
+
+  if(buttonStateA == 1){
 
     EVERY_N_SECONDS( SECONDS_PER_PALETTE ) {
       gCurrentPaletteNumber = addmod8( gCurrentPaletteNumber, 1, gGradientPaletteCount);
@@ -320,14 +428,14 @@ buttonState = digitalRead(buttonPin);
     FastLED.delay(20);
       
     } else {
-      Serial.println("Displaying LEDS");
-      Serial.println(atoi(redC));
-      Serial.println(atoi(greenC));
-      Serial.println(atoi(blueC));
+//      Serial.println("Displaying LEDS");
+//      Serial.println(atoi(redC));
+//      Serial.println(atoi(greenC));
+//      Serial.println(atoi(blueC));
       for(int i = 0; i < NUM_LEDS; i++){
-        leds[i].r = 0;
-        leds[i].g = 255;
-        leds[i].b = 0;
+        leds[i].r = redColor;
+        leds[i].g = greenColor;
+        leds[i].b = blueColor;
       };
       FastLED.show();
     }
