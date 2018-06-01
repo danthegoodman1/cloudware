@@ -95,9 +95,11 @@ BLYNK_WRITE(V1) //Button Widget is writing to pin V1
   // Update the buttons on the app
   if (buttonStateB == 1){
     Blynk.virtualWrite(V2, 0);
+    buttonStateB = 0;
   }
   if (buttonStateC == 1){
     Blynk.virtualWrite(V3, 0);
+    buttonStateC = 0;
   }
 }
 // Custom 1
@@ -106,9 +108,11 @@ BLYNK_WRITE(V2)
   buttonStateB = param.asInt();
   if (buttonStateA == 1){
     Blynk.virtualWrite(V1, 0);
+    buttonStateA = 0;
   }
   if (buttonStateC == 1){
     Blynk.virtualWrite(V3, 0);
+    buttonStateC = 0;
   }
 }
 // Custom 2
@@ -117,9 +121,11 @@ BLYNK_WRITE(V3)
   buttonStateC = param.asInt();
   if (buttonStateA == 1){
     Blynk.virtualWrite(V1, 0);
+    buttonStateA = 0;
   }
   if (buttonStateB == 1){
     Blynk.virtualWrite(V2, 0);
+    buttonStateB = 0;
   }
 }
 
@@ -296,6 +302,8 @@ void setup() {
 }
 
 extern const TProgmemRGBGradientPalettePtr gGradientPalettes[];
+extern const TProgmemRGBGradientPalettePtr gGradientPalettesCustom1[];
+extern const TProgmemRGBGradientPalettePtr gGradientPalettesCustom2[];
 extern const uint8_t gGradientPaletteCount;
 
 // Current palette number from the 'playlist' of color palettes
@@ -303,6 +311,8 @@ uint8_t gCurrentPaletteNumber = 0;
 
 CRGBPalette16 gCurrentPalette( CRGB::Black);
 CRGBPalette16 gTargetPalette( gGradientPalettes[0] );
+CRGBPalette16 gTargetPaletteCustom1( gGradientPalettesCustom1[0] );
+CRGBPalette16 gTargetPaletteCustom2( gGradientPalettesCustom2[0] );
 
 
 void loop() {
@@ -427,6 +437,37 @@ if(buttonStateA == 1){
     FastLED.show();
     FastLED.delay(20);
       
+    } else if(buttonStateB == 1){
+      // gGradientPalettesCustom1
+      EVERY_N_SECONDS( SECONDS_PER_PALETTE ) {
+      gCurrentPaletteNumber = addmod8( gCurrentPaletteNumber, 1, gGradientPaletteCount);
+      gTargetPaletteCustom1 = gGradientPalettesCustom1[ gCurrentPaletteNumber ];
+    }
+  
+    EVERY_N_MILLISECONDS(40) {
+      nblendPaletteTowardPalette( gCurrentPalette, gTargetPaletteCustom1, 16);
+    }
+    
+    colorwaves( leds, NUM_LEDS, gCurrentPalette);
+  
+    FastLED.show();
+    FastLED.delay(20);
+    } else if(buttonStateC == 1){
+      // gGradientPalettesCustom1
+      EVERY_N_SECONDS( SECONDS_PER_PALETTE ) {
+      gCurrentPaletteNumber = addmod8( gCurrentPaletteNumber, 1, gGradientPaletteCount);
+      gTargetPaletteCustom2 = gGradientPalettesCustom2[ gCurrentPaletteNumber ];
+    }
+  
+    EVERY_N_MILLISECONDS(40) {
+      nblendPaletteTowardPalette( gCurrentPalette, gTargetPaletteCustom2, 16);
+    }
+    
+    colorwaves( leds, NUM_LEDS, gCurrentPalette);
+  
+    FastLED.show();
+    FastLED.delay(20);
+    
     } else {
 //      Serial.println("Displaying LEDS");
 //      Serial.println(atoi(redC));
@@ -846,7 +887,113 @@ const TProgmemRGBGradientPalettePtr gGradientPalettes[] = {
   BlacK_Red_Magenta_Yellow_gp,
   Blue_Cyan_Yellow_gp };
 
+  DEFINE_GRADIENT_PALETTE( cottonCandy ) {
+    0,  75,  1,221,
+   30, 252, 73,255,
+   48, 169,  0,242,
+  119,   0,149,242,
+  170,  43,  0,242,
+  206, 252, 73,255,
+  232,  78, 12,214,
+  255,   0,149,242};
+
+DEFINE_GRADIENT_PALETTE( pastels1 ) {
+    0, 107,  1,205,
+   35, 255,255,255,
+   73, 107,  1,205,
+  107,  10,149,210,
+  130, 255,255,255,
+  153,  10,149,210,
+  170,  27,175,119,
+  198,  53,203, 56,
+  207, 132,229,135,
+  219, 255,255,255,
+  231, 132,229,135,
+  252,  53,203, 56,
+  255,  53,203, 56};
+
+DEFINE_GRADIENT_PALETTE( sunconure ) {
+    0,  20,223, 13,
+  160, 232, 65,  1,
+  252, 232,  5,  1,
+  255, 232,  5,  1};
+
+DEFINE_GRADIENT_PALETTE( bhw1_three_gp ) {
+    0, 255,255,255,
+   45,   7, 12,255,
+  112, 227,  1,127,
+  112, 227,  1,127,
+  140, 255,255,255,
+  155, 227,  1,127,
+  196,  45,  1, 99,
+  255, 255,255,255};
+
+DEFINE_GRADIENT_PALETTE( bhw1_w00t_gp ) {
+    0,   3, 13, 43,
+  104,  78,141,240,
+  188, 255,  0,  0,
+  255,  28,  1,  1};
+
+DEFINE_GRADIENT_PALETTE( purplefly_gp ) {
+    0,   0,  0,  0,
+   63, 239,  0,122,
+  191, 252,255, 78,
+  255,   0,  0,  0};
+
+DEFINE_GRADIENT_PALETTE( bhw2_grrrrr_gp ) {
+    0, 184, 15,155,
+   35,  78, 46,168,
+   84,  65,169,230,
+  130,   9,127,186,
+  163,  77,182,109,
+  191, 242,246, 55,
+  216, 142,128,103,
+  255,  72, 50,168};
+
+DEFINE_GRADIENT_PALETTE( bhw2_52_gp ) {
+    0,   1, 55,  1,
+  130, 255,255,  8,
+  255,  42, 55,  0};
+
+DEFINE_GRADIENT_PALETTE( bhw2_sunsetx_gp ) {
+    0,  42, 55,255,
+   25,  73,101,242,
+   89, 115,162,228,
+  107, 115,162,228,
+  114, 100, 77,201,
+  127,  86, 23,174,
+  142, 190, 32, 24,
+  171, 210,107, 42,
+  255, 232,229, 67};
+
+DEFINE_GRADIENT_PALETTE( bhw2_turq_gp ) {
+    0,   1, 33, 95,
+   38,   1,107, 37,
+   76,  42,255, 45,
+  127, 255,255, 45,
+  178,  42,255, 45,
+  216,   1,107, 37,
+  255,   1, 33, 95};
+
+const TProgmemRGBGradientPalettePtr gGradientPalettesCustom1[] = {
+  cottonCandy,
+  pastels1,
+  sunconure,
+  bhw1_three_gp,
+  bhw1_w00t_gp,
+  purplefly_gp,
+  };
+  
+const TProgmemRGBGradientPalettePtr gGradientPalettesCustom2[] = {
+  Sunset_Real_gp,
+  es_rivendell_15_gp,
+  es_ocean_breeze_036_gp,
+  rgi_15_gp };
 
 // Count of how many cpt-city gradients are defined:
 const uint8_t gGradientPaletteCount = 
   sizeof( gGradientPalettes) / sizeof( TProgmemRGBGradientPalettePtr );
+const uint8_t gGradientPaletteCountCustom1 = 
+  sizeof( gGradientPalettesCustom1) / sizeof( TProgmemRGBGradientPalettePtr );
+const uint8_t gGradientPaletteCountCustom2 = 
+  sizeof( gGradientPalettesCustom2) / sizeof( TProgmemRGBGradientPalettePtr );
