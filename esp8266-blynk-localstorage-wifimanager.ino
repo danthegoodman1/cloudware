@@ -38,7 +38,7 @@
 int buttonStateA;
 int buttonStateB;
 int buttonStateC;
-bool runColor; // This is for the color selection
+int runColor; // This is for the color selection
 // Blynk colors
 int redColor;
 int blueColor;
@@ -72,9 +72,14 @@ BLYNK_CONNECTED() {
 }
 
 // Blynk virtual pin handling
-// Stock animation
+// All of the setting variable then writing the value might be redundant since we
+// Set the value in the pin write...
+
+// Chosen Color
 BLYNK_WRITE(V0) //Button Widget is writing to pin V1
 {
+  runColor = 1;
+  Blynk.virtualWrite(V4, 1);
   Blynk.virtualWrite(V1, 0);
   Blynk.virtualWrite(V2, 0);
   Blynk.virtualWrite(V3, 0);
@@ -88,9 +93,12 @@ BLYNK_WRITE(V0) //Button Widget is writing to pin V1
   Serial.println(greenColor);
   Serial.println(blueColor);
 }
+// Stock Animation
 BLYNK_WRITE(V1) //Button Widget is writing to pin V1
 {
   buttonStateA = param.asInt();
+  runColor = 1;
+  Blynk.virtualWrite(V4, 1);
   Serial.println(buttonStateA);
   // Update the buttons on the app
   if (buttonStateB == 1){
@@ -106,6 +114,8 @@ BLYNK_WRITE(V1) //Button Widget is writing to pin V1
 BLYNK_WRITE(V2)
 {
   buttonStateB = param.asInt();
+  runColor = 1;
+  Blynk.virtualWrite(V4, 1);
   if (buttonStateA == 1){
     Blynk.virtualWrite(V1, 0);
     buttonStateA = 0;
@@ -119,6 +129,8 @@ BLYNK_WRITE(V2)
 BLYNK_WRITE(V3)
 {
   buttonStateC = param.asInt();
+  runColor = 1;
+  Blynk.virtualWrite(V4, 1);
   if (buttonStateA == 1){
     Blynk.virtualWrite(V1, 0);
     buttonStateA = 0;
@@ -126,6 +138,18 @@ BLYNK_WRITE(V3)
   if (buttonStateB == 1){
     Blynk.virtualWrite(V2, 0);
     buttonStateB = 0;
+  }
+}
+// Power switch (runColor)
+BLYNK_WRITE(V4)
+{
+  runColor = param.asInt();
+  // if Turned off, turn off all animations, that way on power on it will just return to the color
+  // Chosen from the RGB Zebra
+  if (runColor == 0){
+    Blynk.virtualWrite(V1, 0);
+    Blynk.virtualWrite(V2, 0);
+    Blynk.virtualWrite(V3, 0);
   }
 }
 
@@ -270,7 +294,7 @@ void setup() {
 //  WiFi.disconnect(true); //erases store credentially
 //  SPIFFS.format();  //erases stored values
   Serial.println("Done");
-  
+
   // check if need initial restart
   // This will be determined why whether our localip is 0.0.0.0
   // Which means it was the first boot and it did its stupid fail crap
@@ -284,7 +308,7 @@ void setup() {
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS)
   .setDither(BRIGHTNESS < 255);
   FastLED.setBrightness(BRIGHTNESS);
-  
+
   pinMode(buttonPinA, INPUT);
   buttonStateA = digitalRead(buttonPinA);
   pinMode(buttonPinB, INPUT);
@@ -298,7 +322,7 @@ void setup() {
      Serial.println("Blynk connection timed out.");
      //handling code (reset esp?)
   }
-  
+
 }
 
 extern const TProgmemRGBGradientPalettePtr gGradientPalettes[];
@@ -316,17 +340,17 @@ CRGBPalette16 gTargetPaletteCustom2( gGradientPalettesCustom2[0] );
 
 
 void loop() {
-  // initial LED display from the json and update leds 
-  
+  // initial LED display from the json and update leds
+
 //  if ((WiFi.status() == WL_CONNECTED)) { //Check the current connection status
-// 
+//
 //    HTTPClient http;
-// 
+//
 //    http.begin("http://104.236.103.190/getcolors"); //Specify the URL
 //    int httpCode = http.GET();                                        //Make the request
-// 
+//
 //    if (httpCode > 0) { //Check for the returning code
-// 
+//
 //        String payload = http.getString();
 //        Serial.println(httpCode);
 //        Serial.println(payload);
@@ -360,11 +384,11 @@ void loop() {
 //        json.printTo(configFile);
 //        configFile.close();
 //      }
-// 
+//
 //    else {
 //      Serial.println("Error on HTTP request");
 //    }
-// 
+//
 //    http.end(); //Free the resources
 //  }
 //  Serial.println(apikey);
@@ -374,7 +398,7 @@ void loop() {
 
 ///////////////////////////////////////////////////////////////////////
 
-//Uncomment these lines of code if you want to reset the device 
+//Uncomment these lines of code if you want to reset the device
 //It could be linked to a physical reset button on the device and set
 //to trigger the next 3 lines of code.
   //WiFi.disconnect(true); //erases store credentially
@@ -390,11 +414,12 @@ void loop() {
 // Check for changes, update variables so we can make the buttons push buttons and not switches on Blynk app
 // Using virtual pins now so don't have to worry about loop speed checking for pin since Blynk checking virtual reads will
 // Run in the background
-if(buttonStateA == 1){
-  buttonStateB = 0;
-  buttonStateC = 0;
-  runColor = false;
-}
+// Can probably remove this:::
+// if(buttonStateA == 1){
+//   buttonStateB = 0;
+//   buttonStateC = 0;
+//   runColor = false;
+// }
 
 // Old hardware button checking
 //if (digitalRead(buttonPinA) == 1){
@@ -421,54 +446,54 @@ if(buttonStateA == 1){
 //  buttonStateC = 0;
 //}
 
-  if(buttonStateA == 1){
+  if(buttonStateA == 1 && runColor == 1){
 
     EVERY_N_SECONDS( SECONDS_PER_PALETTE ) {
       gCurrentPaletteNumber = addmod8( gCurrentPaletteNumber, 1, gGradientPaletteCount);
       gTargetPalette = gGradientPalettes[ gCurrentPaletteNumber ];
     }
-  
+
     EVERY_N_MILLISECONDS(40) {
       nblendPaletteTowardPalette( gCurrentPalette, gTargetPalette, 16);
     }
-    
+
     colorwaves( leds, NUM_LEDS, gCurrentPalette);
-  
+
     FastLED.show();
     FastLED.delay(20);
-      
-    } else if(buttonStateB == 1){
+
+    } else if(buttonStateB == 1 && runColor == 1){
       // gGradientPalettesCustom1
       EVERY_N_SECONDS( SECONDS_PER_PALETTE ) {
       gCurrentPaletteNumber = addmod8( gCurrentPaletteNumber, 1, gGradientPaletteCount);
       gTargetPaletteCustom1 = gGradientPalettesCustom1[ gCurrentPaletteNumber ];
     }
-  
+
     EVERY_N_MILLISECONDS(40) {
       nblendPaletteTowardPalette( gCurrentPalette, gTargetPaletteCustom1, 16);
     }
-    
+
     colorwaves( leds, NUM_LEDS, gCurrentPalette);
-  
+
     FastLED.show();
     FastLED.delay(20);
-    } else if(buttonStateC == 1){
+    } else if(buttonStateC == 1 && runColor == 1){
       // gGradientPalettesCustom1
       EVERY_N_SECONDS( SECONDS_PER_PALETTE ) {
       gCurrentPaletteNumber = addmod8( gCurrentPaletteNumber, 1, gGradientPaletteCount);
       gTargetPaletteCustom2 = gGradientPalettesCustom2[ gCurrentPaletteNumber ];
     }
-  
+
     EVERY_N_MILLISECONDS(40) {
       nblendPaletteTowardPalette( gCurrentPalette, gTargetPaletteCustom2, 16);
     }
-    
+
     colorwaves( leds, NUM_LEDS, gCurrentPalette);
-  
+
     FastLED.show();
     FastLED.delay(20);
-    
-    } else {
+
+  } else if(runColor == 1){
 //      Serial.println("Displaying LEDS");
 //      Serial.println(atoi(redC));
 //      Serial.println(atoi(greenC));
@@ -479,19 +504,26 @@ if(buttonStateA == 1){
         leds[i].b = blueColor;
       };
       FastLED.show();
-    }
+  } else { // set all to black is runColor is 0
+    for(int i = 0; i < NUM_LEDS; i++){
+      leds[i].r = 0;
+      leds[i].g = 0;
+      leds[i].b = 0;
+    };
+    FastLED.show();
+  }
 
 
 }
 
 // This function draws color waves with an ever-changing,
 // widely-varying set of parameters, using a color palette.
-void colorwaves( CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette) 
+void colorwaves( CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette)
 {
   static uint16_t sPseudotime = 0;
   static uint16_t sLastMillis = 0;
   static uint16_t sHue16 = 0;
- 
+
   uint8_t sat8 = beatsin88( 87, 220, 250);
   uint8_t brightdepth = beatsin88( 341, 96, 224);
   uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 256), (40 * 256));
@@ -499,14 +531,14 @@ void colorwaves( CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette)
 
   uint16_t hue16 = sHue16;//gHue * 256;
   uint16_t hueinc16 = beatsin88(113, 300, 1500);
-  
+
   uint16_t ms = millis();
   uint16_t deltams = ms - sLastMillis ;
   sLastMillis  = ms;
   sPseudotime += deltams * msmultiplier;
   sHue16 += deltams * beatsin88( 400, 5,9);
   uint16_t brightnesstheta16 = sPseudotime;
-  
+
   for( uint16_t i = 0 ; i < numleds; i++) {
     hue16 += hueinc16;
     uint8_t hue8 = hue16 / 256;
@@ -523,7 +555,7 @@ void colorwaves( CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette)
     uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
     uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
     bri8 += (255 - brightdepth);
-    
+
     uint8_t index = hue8;
     //index = triwave8( index);
     index = scale8( index, 240);
@@ -532,12 +564,12 @@ void colorwaves( CRGB* ledarray, uint16_t numleds, CRGBPalette16& palette)
 
     uint16_t pixelnumber = i;
     pixelnumber = (numleds-1) - pixelnumber;
-    
+
     nblend( ledarray[pixelnumber], newcolor, 128);
   }
 }
 
-// Alternate rendering function just scrolls the current palette 
+// Alternate rendering function just scrolls the current palette
 // across the defined LED strip.
 void palettetest( CRGB* ledarray, uint16_t numleds, const CRGBPalette16& gCurrentPalette)
 {
@@ -761,7 +793,7 @@ DEFINE_GRADIENT_PALETTE( Colorfull_gp ) {
   124, 255,255,137,
   168, 100,180,155,
   255,  22,121,174};
-  
+
 DEFINE_GRADIENT_PALETTE( Magenta_Evening_gp ) {
     0,  71, 27, 39,
    31, 130, 11, 51,
@@ -844,9 +876,9 @@ DEFINE_GRADIENT_PALETTE( Blue_Cyan_Yellow_gp ) {
 
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
-// a number, rather than having to activate each explicitly 
+// a number, rather than having to activate each explicitly
 // by name every time.
-// Since it is const, this array could also be moved 
+// Since it is const, this array could also be moved
 // into PROGMEM to save SRAM, but for simplicity of illustration
 // we'll keep it in a regular SRAM array.
 //
@@ -983,7 +1015,7 @@ const TProgmemRGBGradientPalettePtr gGradientPalettesCustom1[] = {
   bhw1_w00t_gp,
   purplefly_gp,
   };
-  
+
 const TProgmemRGBGradientPalettePtr gGradientPalettesCustom2[] = {
   Sunset_Real_gp,
   es_rivendell_15_gp,
@@ -991,9 +1023,9 @@ const TProgmemRGBGradientPalettePtr gGradientPalettesCustom2[] = {
   rgi_15_gp };
 
 // Count of how many cpt-city gradients are defined:
-const uint8_t gGradientPaletteCount = 
+const uint8_t gGradientPaletteCount =
   sizeof( gGradientPalettes) / sizeof( TProgmemRGBGradientPalettePtr );
-const uint8_t gGradientPaletteCountCustom1 = 
+const uint8_t gGradientPaletteCountCustom1 =
   sizeof( gGradientPalettesCustom1) / sizeof( TProgmemRGBGradientPalettePtr );
-const uint8_t gGradientPaletteCountCustom2 = 
+const uint8_t gGradientPaletteCountCustom2 =
   sizeof( gGradientPalettesCustom2) / sizeof( TProgmemRGBGradientPalettePtr );
