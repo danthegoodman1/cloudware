@@ -74,6 +74,7 @@ BLYNK_CONNECTED() {
 // Blynk virtual pin handling
 // All of the setting variable then writing the value might be redundant since we
 // Set the value in the pin write...
+// NO THEY AREN'T I HAD TO DO BOTH FOR THE POWER SWITCH (V4) IT ONLY UPDATES THE APP I THINK MAYBE IT WAS BEING WEIRD
 
 // Chosen Color
 BLYNK_WRITE(V0) //Button Widget is writing to pin V1
@@ -148,8 +149,11 @@ BLYNK_WRITE(V4)
   // Chosen from the RGB Zebra
   if (runColor == 0){
     Blynk.virtualWrite(V1, 0);
+    buttonStateA = 0;
     Blynk.virtualWrite(V2, 0);
+    buttonStateB = 0;
     Blynk.virtualWrite(V3, 0);
+    buttonStateC = 0;
   }
 }
 
