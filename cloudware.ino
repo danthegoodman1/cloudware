@@ -135,6 +135,22 @@ BLYNK_WRITE(V0) //Button Widget is writing to pin V1
   Serial.println(redColor);
   Serial.println(greenColor);
   Serial.println(blueColor);
+
+  // We also want to save the color
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& json = jsonBuffer.createObject();
+  json["apikey"] = apikey;
+  json["redC"] = redColor;
+  json["greenC"] = greenColor;
+  json["blueC"] = blueColor;
+  File configFile = SPIFFS.open("/config.json", "w");
+  if (!configFile) {
+    Serial.println("failed to open config file for writing");
+  }
+  Serial.println("Printing new JSON:::::::");
+  json.printTo(Serial);
+  json.printTo(configFile);
+  configFile.close();
 }
 // Stock Animation
 BLYNK_WRITE(V1) //Button Widget is writing to pin V1
