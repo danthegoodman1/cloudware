@@ -39,7 +39,8 @@ int buttonStateA;
 int buttonStateB;
 int buttonStateC;
 int buttonStateD;
-int runColor; // This is for the color selection
+int runColor = 1; // This is for the color selection, on powerloss we want to make sure it gets turned back on
+// Then it can be turned off from the app (will automatically if off) when it reconnects
 // Blynk colors
 int redColor;
 int blueColor;
