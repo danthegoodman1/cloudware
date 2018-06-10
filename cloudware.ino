@@ -137,7 +137,7 @@ BLYNK_WRITE(V0) //Button Widget is writing to pin V1
   Serial.println(greenColor);
   Serial.println(blueColor);
 
-  // We also want to save the color
+  // We also want to save the color, but I am not actually loading it yet since I need to do atoi() stuff
   DynamicJsonBuffer jsonBuffer;
   JsonObject& json = jsonBuffer.createObject();
   json["apikey"] = apikey;
@@ -414,6 +414,9 @@ void setup() {
   .setDither(BRIGHTNESS < 255);
   FastLED.setBrightness(BRIGHTNESS);
 
+
+  // Not sure that these are necessary since D works without this... and they aren't real buttons/pins...
+  // Yeah they aren't necessary
   pinMode(buttonPinA, INPUT);
   buttonStateA = digitalRead(buttonPinA);
   pinMode(buttonPinB, INPUT);
