@@ -24,7 +24,9 @@
 #define FASTLED_ESP8266_NODEMCU_PIN_ORDER
 #define FASTLED_ESP8266_D1_PIN_ORDER
 #include <FastLED.h>
-#define DATA_PIN    14
+#define DATA_PIN    14 // D5
+#define BUILTINLED 2 // Pin 2
+#define RESET_WIFI_AND_SPIFFS 15 // D8
 //#define CLK_PIN   4
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
@@ -45,6 +47,8 @@ int runColor = 1; // This is for the color selection, on powerloss we want to ma
 int redColor;
 int blueColor;
 int greenColor;
+// For checking reset
+int resetButton;
 
 CRGB leds[NUM_LEDS];
 
@@ -63,6 +67,11 @@ CRGB leds[NUM_LEDS];
 #define DEV_THRESH 0.8
 #define MSECS 30 * 1000
 #define CYCLES MSECS / DELAY
+
+// Blink codes:
+// 5 times/second for 3 seconds (15 times): Resetting WiFi and SPIFFS (user caused by holding reset button on powerup)
+// 2 times/second for 5 seconds (10 times): Blynk connection failed, rebooting, if put in wrong API key above reset required
+// 
 
 // Music React
 float fscale( float originalMin, float originalMax, float newBegin, float newEnd, float inputValue, float curve);
@@ -254,6 +263,27 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
 
+  // Check if reset button held
+  pinMode(BUILTINLED, OUTPUT);
+  resetButton = digitalRead(RESET_WIFI_AND_SPIFFS);
+  if(resetButton == LOW){
+    // Reset
+    WiFi.disconnect(true); //erases store credentially
+    SPIFFS.format();  //erases stored values
+    // Blink LED 5 times per second for 3 seconds (15 times)
+    for(int i = 0; i < 15; i++){
+      digitalWrite(BUILTINLED, HIGH);
+      delay(200);
+      digitalWrite(BUILTINLED, LOW);
+      delay(200);
+    }
+    // Reboot device, which will put it in setup mode
+    Serial.println("Resetting ESP Storage, will reboot into setup mode");
+    delay(1000);
+    ESP.restart();
+  }
+  
+
   // Music React
   for (int i = 0; i < AVGLEN; i++) {  
     insert(250, avgs, AVGLEN);
@@ -429,6 +459,17 @@ void setup() {
   if(!Blynk.connect()) {
      Serial.println("Blynk connection timed out.");
      //handling code (reset esp?)
+     // Blink 2 times per second for 5 seconds (10 times)
+     for(int i = 0; i<10; i++){
+      digitalWrite(BUILTINLED, HIGH);
+      delay(500);
+      digitalWrite(BUILTINLED, LOW);
+      delay(500);
+     }
+     // Reset (if put in wrong API key storage reset required)
+     Serial.println("Resetting ESP, if you put in wrong API key, do a storage reset by holding the reset button on power-up");
+     delay(1000);
+     ESP.restart();
   }
 
 }
