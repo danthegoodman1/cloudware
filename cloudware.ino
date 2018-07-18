@@ -68,6 +68,8 @@ CRGB leds[NUM_LEDS];
 #define MSECS 30 * 1000
 #define CYCLES MSECS / DELAY
 
+BlynkTimer timer;
+
 // Blink codes:
 // 5 times/second for 3 seconds (15 times): Resetting WiFi and SPIFFS (user caused by holding reset button on powerup)
 // 2 times/second for 5 seconds (10 times): Blynk connection failed, rebooting, if put in wrong API key above reset required
@@ -258,6 +260,21 @@ BLYNK_WRITE(V5)
 }
 
 
+void batteryCheck(){
+  pinMode(A0, INPUT);
+  pinMode(D5, OUTPUT);
+  digitalWrite(D5, HIGH);
+  // This will enable the read, since the 100k Resistor will consume 10uA
+  raw = analogRead(A0);
+  volt=raw/1023.0;
+  digitalWrite(D5, LOW); // Hopefully the volt variable has copied the raw value
+  // Otherwise just put the digitalWrite at the bottom, but they are primitive data types
+  percentage=volt*100;
+  volt=volt*4.2;
+  Blynk.virtualWrite(V6, volt);
+}
+
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -282,7 +299,8 @@ void setup() {
     delay(1000);
     ESP.restart();
   }
-  
+
+  timer.setInterval(120000L, myTimerEvent); // Send battery status every 2 min
 
   // Music React
   for (int i = 0; i < AVGLEN; i++) {  
@@ -544,6 +562,7 @@ void loop() {
 //  delay(1000);
 
   Blynk.run();
+  timer.run(); // Initiates BlynkTimer
 
 ///////////////////////////////////////////////////////////////////////
 
