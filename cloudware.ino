@@ -300,7 +300,7 @@ void setup() {
     ESP.restart();
   }
 
-  timer.setInterval(120000L, myTimerEvent); // Send battery status every 2 min
+  timer.setInterval(300000L, myTimerEvent); // Send battery status every 2 min
 
   // Music React
   for (int i = 0; i < AVGLEN; i++) {  
