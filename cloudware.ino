@@ -49,6 +49,7 @@ int blueColor;
 int greenColor;
 // For checking reset
 int resetButton;
+int musicRunning = 0; // For Analog Mux/Battery level to see if music is running
 
 CRGB leds[NUM_LEDS];
 
@@ -73,7 +74,7 @@ BlynkTimer timer;
 // Blink codes:
 // 5 times/second for 3 seconds (15 times): Resetting WiFi and SPIFFS (user caused by holding reset button on powerup)
 // 2 times/second for 5 seconds (10 times): Blynk connection failed, rebooting, if put in wrong API key above reset required
-// 
+//
 
 // Music React
 float fscale( float originalMin, float originalMax, float newBegin, float newEnd, float inputValue, float curve);
@@ -147,7 +148,7 @@ BLYNK_WRITE(V0) //Button Widget is writing to pin V1
   Serial.println(redColor);
   Serial.println(greenColor);
   Serial.println(blueColor);
-
+  musicRunning = 0;
   // We also want to save the color, but I am not actually loading it yet since I need to do atoi() stuff
   DynamicJsonBuffer jsonBuffer;
   JsonObject& json = jsonBuffer.createObject();
@@ -171,6 +172,7 @@ BLYNK_WRITE(V1) //Button Widget is writing to pin V1
   runColor = 1;
   Blynk.virtualWrite(V4, 1);
   Serial.println(buttonStateA);
+  musicRunning = 0;
   // Update the buttons on the app
   if (buttonStateB == 1){
     Blynk.virtualWrite(V2, 0);
@@ -191,6 +193,7 @@ BLYNK_WRITE(V2)
   buttonStateB = param.asInt();
   runColor = 1;
   Blynk.virtualWrite(V4, 1);
+  musicRunning = 0;
   if (buttonStateA == 1){
     Blynk.virtualWrite(V1, 0);
     buttonStateA = 0;
@@ -210,6 +213,7 @@ BLYNK_WRITE(V3)
   buttonStateC = param.asInt();
   runColor = 1;
   Blynk.virtualWrite(V4, 1);
+  musicRunning = 0;
   if (buttonStateA == 1){
     Blynk.virtualWrite(V1, 0);
     buttonStateA = 0;
@@ -238,12 +242,15 @@ BLYNK_WRITE(V4)
     buttonStateC = 0;
     Blynk.virtualWrite(V5, 0);
     buttonStateD = 0;
+    musicRunning = 0;
   }
 }
+// Music React
 BLYNK_WRITE(V5)
 {
   buttonStateD = param.asInt();
   runColor = 1;
+  musicRunning = 1;
   Blynk.virtualWrite(V4, 1);
   if (buttonStateA == 1){
     Blynk.virtualWrite(V1, 0);
@@ -261,17 +268,24 @@ BLYNK_WRITE(V5)
 
 
 void batteryCheck(){
-  pinMode(A0, INPUT);
-  pinMode(D5, OUTPUT);
-  digitalWrite(D5, HIGH);
-  // This will enable the read, since the 100k Resistor will consume 10uA
-  raw = analogRead(A0);
-  volt=raw/1023.0;
-  digitalWrite(D5, LOW); // Hopefully the volt variable has copied the raw value
-  // Otherwise just put the digitalWrite at the bottom, but they are primitive data types
-  percentage=volt*100;
-  volt=volt*4.2;
-  Blynk.virtualWrite(V6, volt);
+  if(musicRunning == 0){
+    // Do Mux Stuff
+
+    // pinMode(A0, INPUT); Don't think this is necessary
+    pinMode(D5, OUTPUT);
+    digitalWrite(D5, HIGH);
+    // This will enable the read, since the 100k Resistor will consume 10uA
+    raw = analogRead(ANALOG_READ);
+    volt=raw/1023.0;
+    digitalWrite(D5, LOW); // Hopefully the volt variable has copied the raw value
+    // Otherwise just put the digitalWrite at the bottom, but they are primitive data types
+    percentage=volt*100;
+    volt=volt*4.2;
+    Blynk.virtualWrite(V6, volt);
+    Serial.println("\nDone checking battery, sent value to Blynk.\n");
+  } else {
+    Serial.println("\nCannot check battery, Music Reactive mode running\n");
+  }
 }
 
 
@@ -303,12 +317,12 @@ void setup() {
   timer.setInterval(300000L, myTimerEvent); // Send battery status every 2 min
 
   // Music React
-  for (int i = 0; i < AVGLEN; i++) {  
+  for (int i = 0; i < AVGLEN; i++) {
     insert(250, avgs, AVGLEN);
   }
   high.times = 0;
   high.times_start = millis();
-  Color.r = 0;  
+  Color.r = 0;
   Color.g = 0;
   Color.b = 1;
 
@@ -662,7 +676,7 @@ void loop() {
     FastLED.delay(20);
 
   } else if(buttonStateD == 1 && runColor == 1){ // Music React
-
+    musicRunning = 1;
     switch(mode) {
     case 0:
       visualize_music();
@@ -671,7 +685,7 @@ void loop() {
       break;
   }
     delay(DELAY);
-  
+
   } else if(runColor == 1){
 //      Serial.println("Displaying LEDS");
 //      Serial.println(atoi(redC));
@@ -684,7 +698,7 @@ void loop() {
         leds[i].b = blueColor;
       };
       FastLED.show();
-      
+
   } else { // set all to black is runColor is 0
     for(int i = 0; i < NUM_LEDS; i++){
       leds[i].r = 0;
@@ -706,8 +720,8 @@ void check_high(int avg) {
         high.times = 0;
         songmode = NORMAL;
       } else {
-        high.times_start = millis();  
-        high.times++; 
+        high.times_start = millis();
+        high.times++;
       }
     } else {
       high.times++;
@@ -725,10 +739,10 @@ void check_high(int avg) {
 
 void visualize_music() {
   int sensor_value, mapped, avg, longavg;
-  
+
   //Actual sensor value
   sensor_value = analogRead(ANALOG_READ);
-  
+
   //If 0, discard immediately. Probably not right and save CPU.
   if (sensor_value == 0)
     return;
@@ -739,23 +753,23 @@ void visualize_music() {
 
   if (((avg - mapped) > avg*DEV_THRESH)) //|| ((avg - mapped) < -avg*DEV_THRESH))
     return;
-  
+
   //Insert new avg. values
-  insert(mapped, avgs, AVGLEN); 
-  insert(avg, long_avg, LONG_SECTOR); 
+  insert(mapped, avgs, AVGLEN);
+  insert(avg, long_avg, LONG_SECTOR);
 
   //Compute the "song average" sensor value
   song_avg += avg;
   iter++;
-  if (iter > CYCLES) {  
+  if (iter > CYCLES) {
     song_avg = song_avg / iter;
     iter = 1;
   }
-    
+
   longavg = compute_average(long_avg, LONG_SECTOR);
 
-  //Check if we enter HIGH mode 
-  check_high(longavg);  
+  //Check if we enter HIGH mode
+  check_high(longavg);
 
   if (songmode == HIGH) {
     fade_scale = 3;
@@ -774,9 +788,9 @@ void visualize_music() {
   curshow = fscale(MIC_LOW, MIC_HIGH, 0.0, (float)NUM_LEDS, (float)avg, -1);
 
   /*Set the different leds. Control for too high and too low values.
-          Fun thing to try: Dont account for overflow in one direction, 
+          Fun thing to try: Dont account for overflow in one direction,
     some interesting light effects appear! */
-  for (int i = 0; i < NUM_LEDS; i++) 
+  for (int i = 0; i < NUM_LEDS; i++)
     //The leds we want to show
     if (i < curshow) {
       if (leds[i].r + Color.r > 255)
@@ -785,26 +799,26 @@ void visualize_music() {
         leds[i].r = 0;
       else
         leds[i].r = leds[i].r + Color.r;
-          
+
       if (leds[i].g + Color.g > 255)
         leds[i].g = 255;
       else if (leds[i].g + Color.g < 0)
         leds[i].g = 0;
-      else 
+      else
         leds[i].g = leds[i].g + Color.g;
 
       if (leds[i].b + Color.b > 255)
         leds[i].b = 255;
       else if (leds[i].b + Color.b < 0)
         leds[i].b = 0;
-      else 
-        leds[i].b = leds[i].b + Color.b;  
-      
+      else
+        leds[i].b = leds[i].b + Color.b;
+
     //All the other LEDs begin their fading journey to eventual total darkness
     } else {
       leds[i] = CRGB(leds[i].r/fade_scale, leds[i].g/fade_scale, leds[i].b/fade_scale);
     }
-  FastLED.show(); 
+  FastLED.show();
 }
 
 int compute_average(int *avgs, int len) {
@@ -821,7 +835,7 @@ void insert(int val, int *avgs, int len) {
     if (avgs[i] == -1) {
       avgs[i] = val;
       return;
-    }  
+    }
   }
 
   for (int i = 1; i < len; i++) {
@@ -847,7 +861,7 @@ float fscale( float originalMin, float originalMax, float newBegin, float
   if (curve > 10) curve = 10;
   if (curve < -10) curve = -10;
 
-  curve = (curve * -.1) ; // - invert and scale - this seems more intuitive - postive numbers give more weight to high end on output 
+  curve = (curve * -.1) ; // - invert and scale - this seems more intuitive - postive numbers give more weight to high end on output
   curve = pow(10, curve); // convert linear scale into lograthimic exponent for other pow function
 
   // Check for out of range inputValues
@@ -861,19 +875,19 @@ float fscale( float originalMin, float originalMax, float newBegin, float
   // Zero Refference the values
   OriginalRange = originalMax - originalMin;
 
-  if (newEnd > newBegin){ 
+  if (newEnd > newBegin){
     NewRange = newEnd - newBegin;
   }
   else
   {
-    NewRange = newBegin - newEnd; 
+    NewRange = newBegin - newEnd;
     invFlag = 1;
   }
 
   zeroRefCurVal = inputValue - originalMin;
   normalizedCurVal  =  zeroRefCurVal / OriginalRange;   // normalize to 0 - 1 float
 
-  // Check for originalMin > originalMax  - the math for all other cases i.e. negative numbers seems to work out fine 
+  // Check for originalMin > originalMax  - the math for all other cases i.e. negative numbers seems to work out fine
   if (originalMin > originalMax ) {
     return 0;
   }
@@ -883,8 +897,8 @@ float fscale( float originalMin, float originalMax, float newBegin, float
 
   }
   else     // invert the ranges
-  {   
-    rangedValue =  newBegin - (pow(normalizedCurVal, curve) * NewRange); 
+  {
+    rangedValue =  newBegin - (pow(normalizedCurVal, curve) * NewRange);
   }
 
   return rangedValue;
