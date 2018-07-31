@@ -1,3 +1,5 @@
+// NEW NOTES: PINMODE OUTPUT MEANS HIGH IS CONNECTED TO GROUND, INPUT_PULLUP MEANS CONNECT TO 3.3v or 5v
+
 #include <WiFiManager.h> // from library manager
 #include <ESP8266WiFiAP.h>
 #include <ESP8266WiFiGeneric.h>
@@ -14,8 +16,8 @@
 #include <ESP8266WebServerSecure.h>
 
 #include <FS.h>
-//#include "SPIFFS.h"
-#include <ESP8266WiFi.h>
+//#include "SPIFFS.h" // For ESP32
+#include <ESP8266WiFi.h>b
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>  //https://github.com/bblanchon/ArduinoJson
 #include <ESP8266HTTPClient.h>
@@ -57,7 +59,7 @@ CRGB leds[NUM_LEDS];
 #define BLYNK_PRINT Serial
 
 // For music react
-#define ANALOG_READ 0
+#define ANALOG_READ 0 // A0/ADC0
 #define MIC_LOW 0.0
 #define MIC_HIGH 737.0
 #define AVGLEN 5
@@ -296,23 +298,7 @@ void setup() {
 
   // Check if reset button held
   pinMode(BUILTINLED, OUTPUT);
-  resetButton = digitalRead(RESET_WIFI_AND_SPIFFS);
-  if(resetButton == LOW){
-    // Reset
-    WiFi.disconnect(true); //erases store credentially
-    SPIFFS.format();  //erases stored values
-    // Blink LED 5 times per second for 3 seconds (15 times)
-    for(int i = 0; i < 15; i++){
-      digitalWrite(BUILTINLED, HIGH);
-      delay(200);
-      digitalWrite(BUILTINLED, LOW);
-      delay(200);
-    }
-    // Reboot device, which will put it in setup mode
-    Serial.println("Resetting ESP Storage, will reboot into setup mode");
-    delay(1000);
-    ESP.restart();
-  }
+  pinMode(RESET_WIFI_AND_SPIFFS, INPUT_PULLUP);
 
   timer.setInterval(300000L, myTimerEvent); // Send battery status every 2 min
 
@@ -574,6 +560,27 @@ void loop() {
 //  }
 //  Serial.println(apikey);
 //  delay(1000);
+
+  resetButton = digitalRead(RESET_WIFI_AND_SPIFFS);
+  if(resetButton == HIGH){
+    Serial.println("RESET IS HIGH");
+    // Reset
+    WiFi.disconnect(true); //erases store credentially
+    SPIFFS.format();  //erases stored values
+    // Blink LED 5 times per second for 3 seconds (15 times)
+    for(int i = 0; i < 15; i++){
+      digitalWrite(BUILTINLED, HIGH);
+      delay(200);
+      digitalWrite(BUILTINLED, LOW);
+      delay(200);
+    }
+    // Reboot device, which will put it in setup mode
+    Serial.println("Resetting ESP Storage, will reboot into setup mode");
+    delay(1000);
+    ESP.restart();
+  } else {
+    Serial.println("RESET IS LOW");
+  }
 
   Blynk.run();
   timer.run(); // Initiates BlynkTimer
