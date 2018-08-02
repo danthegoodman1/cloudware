@@ -29,6 +29,7 @@
 #define DATA_PIN    14 // D5
 #define BUILTINLED 2 // Pin 2
 #define RESET_WIFI_AND_SPIFFS 15 // D8
+#define batCheckEn 13 // D7
 //#define CLK_PIN   4
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
@@ -70,6 +71,9 @@ CRGB leds[NUM_LEDS];
 #define DEV_THRESH 0.8
 #define MSECS 30 * 1000
 #define CYCLES MSECS / DELAY
+
+// Mux pins
+#define muxPinA 17 // D4
 
 BlynkTimer timer;
 
@@ -272,14 +276,13 @@ BLYNK_WRITE(V5)
 void batteryCheck(){
   if(musicRunning == 0){
     // Do Mux Stuff
-
-    // pinMode(A0, INPUT); Don't think this is necessary
-    pinMode(D5, OUTPUT);
-    digitalWrite(D5, HIGH);
+    digitalWrite(muxPinA, HIGH); // Switch to battery check
+    digitalWrite(batCheckEn, HIGH); // Enable battery check
     // This will enable the read, since the 100k Resistor will consume 10uA
     raw = analogRead(ANALOG_READ);
     volt=raw/1023.0;
-    digitalWrite(D5, LOW); // Hopefully the volt variable has copied the raw value
+    digitalWrite(batCheckEn, LOW); // Hopefully the volt variable has copied the raw value
+    digitalWrite(muxPinA, LOW); // Switch analog back to mic input
     // Otherwise just put the digitalWrite at the bottom, but they are primitive data types
     percentage=volt*100;
     volt=volt*4.2;
@@ -296,9 +299,10 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
 
-  // Check if reset button held
   pinMode(BUILTINLED, OUTPUT);
   pinMode(RESET_WIFI_AND_SPIFFS, INPUT_PULLUP);
+  pinMode(batCheckEn, OUTPUT);
+  pinMode(muxPinA, OUTPUT);
 
   timer.setInterval(300000L, myTimerEvent); // Send battery status every 2 min
 
@@ -561,6 +565,7 @@ void loop() {
 //  Serial.println(apikey);
 //  delay(1000);
 
+  // Check if reset is held
   resetButton = digitalRead(RESET_WIFI_AND_SPIFFS);
   if(resetButton == HIGH){
     Serial.println("RESET IS HIGH");
