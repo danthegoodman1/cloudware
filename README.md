@@ -2,7 +2,7 @@
 Dynamically connecting device to WiFi, allocating it to Blynk, and then controlling LEDs with Blynk
 
 ## To-Do:
-- Add battery status reporting
+**See Lucid Cloud Notes in iCloud**
 
 ## PCB Versions:
 
