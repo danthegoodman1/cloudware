@@ -2,7 +2,8 @@
 Dynamically connecting device to WiFi, allocating it to Blynk, and then controlling LEDs with Blynk
 
 ## To-Do:
-**See Lucid Cloud Notes in iCloud**
+- Add in Arduino libraries used
+- Test on new PCB
 
 ## PCB Versions:
 
@@ -11,8 +12,11 @@ Dynamically connecting device to WiFi, allocating it to Blynk, and then controll
 - First prototype
 - Added cloud design post printing
 
-### 0.2 (WIP):
+### 0.2:
 
 - Finding replacement for large diode
 - Making smaller
 - Fixing any issues
+
+### 0.3 (WIP):
+- Test with new PCB design
