@@ -1,5 +1,5 @@
 # Cloudware
-Dynamically connecting device to WiFi, allocating it to Blynk, and then controlling LEDs with Blynk
+Dynamically connecting device to WiFi, allocating it to Blynk, and then controlling LEDs with Blynk (Update description)
 
 ## Features (To Do):
 - Music Reactive Lighting mode
