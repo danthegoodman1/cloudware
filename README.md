@@ -10,6 +10,9 @@ Dynamically connecting device to WiFi, allocating it to Blynk, and then controll
 ## To-Do:
 - Add in Arduino libraries used
 - Test on new PCB
+- Redo Music Reactive Lighting mode with 7-bang spectrum analyzer
+- Redo Battery level indication
+- Remake PCB and firmware for ESP32 (should just be pin mappings and some wifi library changes)
 
 ## PCB Versions:
 
